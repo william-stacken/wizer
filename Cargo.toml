@@ -38,6 +38,7 @@ wasm-encoder = "0.6.0"
 wasmparser = "0.78.2"
 wasmtime = "0.35.3"
 wasmtime-wasi = "0.35.3"
+wasmtime-wasi-nn = "0.35.3"
 
 # Enable this dependency to get messages with WAT disassemblies when certain
 # internal panics occur.

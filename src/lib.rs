@@ -37,12 +37,21 @@ const DEFAULT_WASM_MODULE_LINKING: bool = false;
 const DEFAULT_WASM_BULK_MEMORY: bool = false;
 const DEFAULT_WASM_SIMD: bool = true;
 
+/// Host state containing various WASI contexts
+pub struct HostState {
+    /// Wasi common context
+    pub wasi: WasiCtx,
+
+    /// Wasi neural network context
+    pub wasi_nn: wasmtime_wasi_nn::WasiNnCtx,
+}
+
 /// We only ever use `Store<T>` with a fixed `T` that is our optional WASI
 /// context.
-pub(crate) type Store = wasmtime::Store<Option<WasiCtx>>;
+pub(crate) type Store = wasmtime::Store<Option<HostState>>;
 
 /// The type of linker that Wizer uses when evaluating the initialization function.
-pub type Linker = wasmtime::Linker<Option<WasiCtx>>;
+pub type Linker = wasmtime::Linker<Option<HostState>>;
 
 #[cfg(feature = "structopt")]
 fn parse_map_dirs(s: &str) -> anyhow::Result<(PathBuf, PathBuf)> {
@@ -501,8 +510,11 @@ impl Wizer {
 
         let config = self.wasmtime_config()?;
         let engine = wasmtime::Engine::new(&config)?;
-        let wasi_ctx = self.wasi_context()?;
-        let mut store = wasmtime::Store::new(&engine, wasi_ctx);
+        let host = HostState {
+            wasi: self.wasi_context()?.unwrap(),
+            wasi_nn: wasmtime_wasi_nn::WasiNnCtx::new()?,
+        };
+        let mut store = wasmtime::Store::new(&engine, Some(host));
         let module = wasmtime::Module::new(&engine, &instrumented_wasm)
             .context("failed to compile the Wasm module")?;
         self.validate_init_func(&module)?;
@@ -741,8 +753,8 @@ impl Wizer {
         };
 
         if self.allow_wasi {
-            wasmtime_wasi::add_to_linker(&mut linker, |ctx: &mut Option<WasiCtx>| {
-                ctx.as_mut().unwrap()
+            wasmtime_wasi::add_to_linker(&mut linker, |ctx: &mut Option<HostState>| {
+                &mut ctx.as_mut().unwrap().wasi
             })?;
         }
 

@@ -4,6 +4,9 @@ use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use structopt::StructOpt;
 use wizer::Wizer;
+use std::rc::Rc;
+
+mod linker;
 
 #[derive(StructOpt)]
 pub struct Options {
@@ -25,7 +28,7 @@ pub struct Options {
 
 fn main() -> anyhow::Result<()> {
     env_logger::init();
-    let options = Options::from_args();
+    let mut options = Options::from_args();
 
     let stdin = io::stdin();
     let mut input: Box<dyn BufRead> = if let Some(input) = options.input.as_ref() {
@@ -49,7 +52,9 @@ fn main() -> anyhow::Result<()> {
         .read_to_end(&mut input_wasm)
         .context("failed to read input Wasm module")?;
 
-    let output_wasm = options.wizer.run(&input_wasm)?;
+    let output_wasm = options.wizer.make_linker(Some(Rc::new(|e: &wasmtime::Engine| {
+        Ok(linker::create(e)?)
+    })))?.run(&input_wasm)?;
 
     output
         .write_all(&output_wasm)
