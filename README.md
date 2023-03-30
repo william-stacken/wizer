@@ -1,3 +1,11 @@
+# linker-wizer
+Wizer that supports a rust plugin function named `create` in the file [`linker.rs`](src/bin/wizer/linker.rs) that should return a linker to be used while
+Wizer runs the `wizer.initialize` function. It also adds support for the wasi-nn proposal.
+
+An example create function can be found in `linker.rs`.
+
+Original README follows...
+
 <div align="center">
   <h1>Wizer</h1>
 
