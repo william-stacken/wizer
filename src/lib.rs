@@ -40,10 +40,10 @@ const DEFAULT_WASM_SIMD: bool = true;
 /// Host state containing various WASI contexts
 pub struct HostState {
     /// Wasi common context
-    pub wasi: WasiCtx,
+    pub wasi: Option<WasiCtx>,
 
     /// Wasi neural network context
-    pub wasi_nn: wasmtime_wasi_nn::WasiNnCtx,
+    pub wasi_nn: Option<wasmtime_wasi_nn::WasiNnCtx>,
 }
 
 /// We only ever use `Store<T>` with a fixed `T` that is our optional WASI
@@ -511,8 +511,8 @@ impl Wizer {
         let config = self.wasmtime_config()?;
         let engine = wasmtime::Engine::new(&config)?;
         let host = HostState {
-            wasi: self.wasi_context()?.unwrap(),
-            wasi_nn: wasmtime_wasi_nn::WasiNnCtx::new()?,
+            wasi: self.wasi_context()?,
+            wasi_nn: Some(wasmtime_wasi_nn::WasiNnCtx::new()?),
         };
         let mut store = wasmtime::Store::new(&engine, Some(host));
         let module = wasmtime::Module::new(&engine, &instrumented_wasm)
@@ -702,7 +702,7 @@ impl Wizer {
     }
 
     fn wasi_context(&self) -> anyhow::Result<Option<WasiCtx>> {
-        if !self.allow_wasi {
+        if !self.allow_wasi && self.make_linker.is_none() {
             return Ok(None);
         }
 
@@ -754,7 +754,7 @@ impl Wizer {
 
         if self.allow_wasi {
             wasmtime_wasi::add_to_linker(&mut linker, |ctx: &mut Option<HostState>| {
-                &mut ctx.as_mut().unwrap().wasi
+                ctx.as_mut().unwrap().wasi.as_mut().unwrap()
             })?;
         }
 

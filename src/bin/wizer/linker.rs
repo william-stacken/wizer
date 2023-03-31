@@ -10,10 +10,10 @@ pub fn create(e: &wasmtime::Engine) -> anyhow::Result<Linker> {
         x + 1
     });
     wasmtime_wasi::add_to_linker(&mut linker, |ctx: &mut Option<HostState>| {
-        &mut ctx.as_mut().unwrap().wasi
+        ctx.as_mut().unwrap().wasi.as_mut().unwrap()
     })?;
     wasmtime_wasi_nn::add_to_linker(&mut linker, |ctx: &mut Option<HostState>| {
-        &mut ctx.as_mut().unwrap().wasi_nn
+        ctx.as_mut().unwrap().wasi_nn.as_mut().unwrap()
     })?;
 
     Ok(linker)
