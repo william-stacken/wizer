@@ -355,10 +355,6 @@ impl Wizer {
     ///
     /// Defaults to `false`.
     pub fn allow_wasi(&mut self, allow: bool) -> anyhow::Result<&mut Self> {
-        anyhow::ensure!(
-            self.make_linker.is_none(),
-            "Cannot use 'allow_wasi' with a custom linker"
-        );
         self.allow_wasi = allow;
         Ok(self)
     }
@@ -377,10 +373,6 @@ impl Wizer {
         &mut self,
         make_linker: Option<Rc<dyn Fn(&wasmtime::Engine) -> anyhow::Result<Linker>>>,
     ) -> anyhow::Result<&mut Self> {
-        anyhow::ensure!(
-            !self.allow_wasi,
-            "Cannot use 'allow_wasi' with a custom linker"
-        );
         self.make_linker = make_linker;
         Ok(self)
     }
